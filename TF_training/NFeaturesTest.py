@@ -28,7 +28,7 @@ import pandas as pd
 from six.moves import urllib
 import tensorflow as tf
 import numpy as np
-
+import os
 def run_linear_classifier (N , titles, dir):
     CSV_COLUMNS = [
         titles [1:len(titles)]
@@ -50,7 +50,7 @@ def build_estimator(model_dir, base_columns):
     return m
 
 
-def input_fn(data_file, num_epochs, shuffle):
+def input_fn(data_file, num_epochs, shuffle,CSV_COLUMNS,label_column ):
     """Input builder function."""
     df_data = pd.read_csv(
         tf.gfile.Open(data_file),
@@ -60,11 +60,11 @@ def input_fn(data_file, num_epochs, shuffle):
         skiprows=1)
     # remove NaN elements
     df_data = df_data.dropna(how="any", axis=0)
-    if (data_file == "training.csv"):
+    if (data_file == "training_data.csv"):
         print ("meow\n")
         labels = pd.read_csv(
             tf.gfile.Open("training_labels.csv"),
-            names=label_column,
+            names="group",
             skipinitialspace=True,
             engine="python",
             skiprows=1)
@@ -88,9 +88,9 @@ def input_fn(data_file, num_epochs, shuffle):
           num_threads=5)
 
 
-def train_and_eval(model_dir, model_type, train_steps, train_data, test_data):
+def train_and_eval(model_dir, model_type, train_steps, csv_files_dir):
       """Train and evaluate the model."""
-      train_file_name, test_file_name = maybe_download("training.csv", "test.csv")
+      train_file_name, test_file_name = os.path.join(csv_files_dir,"training.csv"), os.path.join(csv_files_dir,"test.csv")
       # Specify file path below if want to find the output easily
       model_dir = tempfile.mkdtemp() if not model_dir else model_dir
 
