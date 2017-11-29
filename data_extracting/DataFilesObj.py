@@ -141,7 +141,3 @@ class DataFilesObj:
             writer.writerow([test_data[i][0]])
         f.close()
 
-
-d= DataFilesObj()
-d.choose_features_by_column_num([18,19],0)
-d.create_csv_files(7,"S&T")

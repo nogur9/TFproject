@@ -29,7 +29,11 @@ from six.moves import urllib
 import tensorflow as tf
 import numpy as np
 import os
-def run_linear_classifier (N , titles, dir):
+
+FLAGS = None
+
+
+def run_linear_classifier (titles, dir):
     CSV_COLUMNS = [
         titles [1:len(titles)]
     ]
@@ -42,6 +46,66 @@ def run_linear_classifier (N , titles, dir):
         base_columns.append(tf.feature_column.numeric_column(title))
 
 
+    parser = argparse.ArgumentParser()
+    parser.register("type", "bool", lambda v: v.lower() == "true")
+    parser.add_argument(
+        "--model_dir",
+        type=str,
+        default="",
+        help="Base directory for output models."
+    )
+    parser.add_argument(
+        "--model_type",
+        type=str,
+        default="wide_n_deep",
+        help="Valid model types: {'wide', 'deep', 'wide_n_deep'}."
+    )
+    parser.add_argument(
+        "--train_steps",
+        type=int,
+        default=1000,
+        help="Number of training steps."
+    )
+    parser.add_argument(
+        "--train_data",
+        type=str,
+        default="",
+        help="Path to the training data."
+    )
+    parser.add_argument(
+        "--test_data",
+        type=str,
+        default="",
+        help="Path to the test data."
+    )
+    parser.add_argument(
+        "--CSV_COLUMNS",
+        type=list,
+        default=CSV_COLUMNS,
+        help="nope."
+    )
+
+    parser.add_argument(
+        "--label_column",
+        type=list,
+        default=label_column,
+        help="nope."
+    )
+    parser.add_argument(
+        "--base_columns",
+        type=list,
+        default=base_columns,
+        help="nope."
+    )
+
+    parser.add_argument(
+        "--csv_files_dir",
+        type=str,
+        default=dir,
+        help="nope."
+    )
+    FLAGS, unparsed = parser.parse_known_args()
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
 def build_estimator(model_dir, base_columns):
     """Build an estimator."""
@@ -50,7 +114,7 @@ def build_estimator(model_dir, base_columns):
     return m
 
 
-def input_fn(data_file, num_epochs, shuffle,CSV_COLUMNS,label_column ):
+def input_fn(data_file, num_epochs, shuffle,CSV_COLUMNS,label_column,csv_files_dir ):
     """Input builder function."""
     df_data = pd.read_csv(
         tf.gfile.Open(data_file),
@@ -60,10 +124,10 @@ def input_fn(data_file, num_epochs, shuffle,CSV_COLUMNS,label_column ):
         skiprows=1)
     # remove NaN elements
     df_data = df_data.dropna(how="any", axis=0)
-    if (data_file == "training_data.csv"):
+    if (data_file == os.path.join(csv_files_dir,"training_data.csv")):
         print ("meow\n")
         labels = pd.read_csv(
-            tf.gfile.Open("training_labels.csv"),
+            tf.gfile.Open(os.path.join(csv_files_dir,"training_labels.csv")),
             names="group",
             skipinitialspace=True,
             engine="python",
@@ -73,7 +137,7 @@ def input_fn(data_file, num_epochs, shuffle,CSV_COLUMNS,label_column ):
     else:
           print ("wuf\n")
           labels = pd.read_csv(
-              tf.gfile.Open("test_labels.csv"),
+              tf.gfile.Open(os.path.join(csv_files_dir,"test_labels.csv")),
               names=label_column,
               skipinitialspace=True,
               engine="python",
@@ -88,68 +152,30 @@ def input_fn(data_file, num_epochs, shuffle,CSV_COLUMNS,label_column ):
           num_threads=5)
 
 
-def train_and_eval(model_dir, model_type, train_steps, csv_files_dir):
-      """Train and evaluate the model."""
-      train_file_name, test_file_name = os.path.join(csv_files_dir,"training.csv"), os.path.join(csv_files_dir,"test.csv")
+def train_and_eval(model_dir, train_steps, csv_files_dir, CSV_COLUMNS,label_column,base_columns):
+    train_file_name, test_file_name = os.path.join(csv_files_dir,"training_data.csv"), os.path.join(csv_files_dir,"test_data.csv")
       # Specify file path below if want to find the output easily
-      model_dir = tempfile.mkdtemp() if not model_dir else model_dir
+    model_dir = tempfile.mkdtemp() if not model_dir else model_dir
 
-      m = build_estimator(model_dir, model_type)
+    m = build_estimator(model_dir, base_columns)
       # set num_epochs to None to get infinite stream of data.
-      m.train(
-          input_fn=input_fn(train_file_name, num_epochs=None, shuffle=True),
-          steps=train_steps)
-      # set steps to None to run evaluation until all data consumed.
-      results = m.evaluate(
-          input_fn=input_fn(test_file_name, num_epochs=1, shuffle=False),
-          steps=None)
-      print("model directory = %s" % model_dir)
-      for key in sorted(results):
+    m.train(
+        input_fn=input_fn(train_file_name, num_epochs=None, shuffle=True, CSV_COLUMNS,label_column,csv_files_dir),
+        steps=train_steps)
+    # set steps to None to run evaluation until all data consumed.
+    results = m.evaluate(
+        input_fn=input_fn(test_file_name, num_epochs=1, shuffle=False, CSV_COLUMNS,label_column,csv_files_dir),
+        steps=None)
+    print("model directory = %s" % model_dir)
+    for key in sorted(results):
         print("%s: %s" % (key, results[key]))
       # Manual cleanup
-      shutil.rmtree(model_dir)
+    shutil.rmtree(model_dir)
 
 
-    FLAGS = None
+
+def main(_):
+    train_and_eval(FLAGS.model_dir, FLAGS.train_steps, FLAGS.csv_files_dir,
+        FLAGS.CSV_COLUMNS,FLAGS.label_column,FLAGS.base_columns)
 
 
-    def main(_):
-      train_and_eval(FLAGS.model_dir, FLAGS.model_type, FLAGS.train_steps,
-                     FLAGS.train_data, FLAGS.test_data)
-
-
-    if __name__ == "__main__":
-      parser = argparse.ArgumentParser()
-      parser.register("type", "bool", lambda v: v.lower() == "true")
-      parser.add_argument(
-          "--model_dir",
-          type=str,
-          default="",
-          help="Base directory for output models."
-      )
-      parser.add_argument(
-          "--model_type",
-          type=str,
-          default="wide_n_deep",
-          help="Valid model types: {'wide', 'deep', 'wide_n_deep'}."
-      )
-      parser.add_argument(
-          "--train_steps",
-          type=int,
-          default=1000,
-          help="Number of training steps."
-      )
-      parser.add_argument(
-          "--train_data",
-          type=str,
-          default="",
-          help="Path to the training data."
-      )
-      parser.add_argument(
-          "--test_data",
-          type=str,
-          default="",
-          help="Path to the test data."
-      )
-      FLAGS, unparsed = parser.parse_known_args()
-      tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
