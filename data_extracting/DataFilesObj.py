@@ -13,7 +13,7 @@ class DataFilesObj:
     data_list = []
     csv_files_dir = None
     titles = []
-    def __init__(self,xml_path="OrganizedData.xlsx", sheet="Sheet1"):
+    def __init__(self,xml_path="/home/kivy/TFproject/data_extracting/OrganizedData.xlsx", sheet="Sheet1"):
         self.xml_path = xml_path
         self.sheet = sheet
 

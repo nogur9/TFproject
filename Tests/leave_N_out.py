@@ -1,5 +1,5 @@
-from Run_linear_model import run_linear_model
-from data_extarcting.DataFilesObj import DataFilesObj
+from Tests.Run_linear_model import run_linear_model
+from data_extracting.DataFilesObj import DataFilesObj
 import itertools
 
 
@@ -19,7 +19,8 @@ class LeaveNOutObj:
         for combination in combinations_iter:
             training_data, test_data = self.split_data (combination)
             self.data_file_obj.create_csv_files_with_premade_data(training_data,test_data,self.csv_files_dir)
-            results = run_linear_model(self.csv_files_dir)
+            results = run_linear_model(self.data_file_obj.titles,self.csv_files_dir)
+            print (results)
             self.acc_result_list.append(results[0])
         return (sum(self.acc_result_list) / float(len(self.acc_result_list)))
 
@@ -37,6 +38,7 @@ class LeaveNOutObj:
                 test_list.append(self.data_file_obj.data_list[index])
             else:
                 training_list.append(self.data_file_obj.data_list[index])
+        return training_list, test_list
 
 
 d= DataFilesObj()

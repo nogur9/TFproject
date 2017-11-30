@@ -33,6 +33,11 @@ import os
 FLAGS = None
 
 
+def main(argv=None):
+    print (FLAGS)
+    train_and_eval(FLAGS.model_dir, FLAGS.train_steps, FLAGS.csv_files_dir,
+        FLAGS.CSV_COLUMNS,FLAGS.label_column,FLAGS.base_columns)
+
 def run_linear_classifier (titles, dir):
     CSV_COLUMNS = [
         titles [1:len(titles)]
@@ -105,7 +110,10 @@ def run_linear_classifier (titles, dir):
         help="nope."
     )
     FLAGS, unparsed = parser.parse_known_args()
-    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+    print(FLAGS)
+    train_and_eval(FLAGS.model_dir, FLAGS.train_steps, FLAGS.csv_files_dir,
+                   FLAGS.CSV_COLUMNS, FLAGS.label_column, FLAGS.base_columns)
+    #tf.app.run(main=main, argv=[FLAGS] + unparsed)
 
 def build_estimator(model_dir, base_columns):
     """Build an estimator."""
@@ -114,7 +122,7 @@ def build_estimator(model_dir, base_columns):
     return m
 
 
-def input_fn(data_file, num_epochs, shuffle,CSV_COLUMNS,label_column,csv_files_dir ):
+def input_fn(data_file,CSV_COLUMNS,label_column,csv_files_dir, num_epochs, shuffle ):
     """Input builder function."""
     df_data = pd.read_csv(
         tf.gfile.Open(data_file),
@@ -160,11 +168,11 @@ def train_and_eval(model_dir, train_steps, csv_files_dir, CSV_COLUMNS,label_colu
     m = build_estimator(model_dir, base_columns)
       # set num_epochs to None to get infinite stream of data.
     m.train(
-        input_fn=input_fn(train_file_name, num_epochs=None, shuffle=True, CSV_COLUMNS,label_column,csv_files_dir),
+        input_fn=input_fn(train_file_name, CSV_COLUMNS,label_column,csv_files_dir, num_epochs=None, shuffle=True),
         steps=train_steps)
     # set steps to None to run evaluation until all data consumed.
     results = m.evaluate(
-        input_fn=input_fn(test_file_name, num_epochs=1, shuffle=False, CSV_COLUMNS,label_column,csv_files_dir),
+        input_fn=input_fn(test_file_name, CSV_COLUMNS,label_column,csv_files_dir, num_epochs=1, shuffle=False),
         steps=None)
     print("model directory = %s" % model_dir)
     for key in sorted(results):
@@ -174,8 +182,6 @@ def train_and_eval(model_dir, train_steps, csv_files_dir, CSV_COLUMNS,label_colu
 
 
 
-def main(_):
-    train_and_eval(FLAGS.model_dir, FLAGS.train_steps, FLAGS.csv_files_dir,
-        FLAGS.CSV_COLUMNS,FLAGS.label_column,FLAGS.base_columns)
+
 
 
