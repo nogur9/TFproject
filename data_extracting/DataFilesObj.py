@@ -4,18 +4,19 @@ import csv
 import sys
 import random
 import os
-
 GroupColumnIndex = 1
 GROUP_VALUES = {"low":0, "high":1,"clinical":1}
 class DataFilesObj:
+    base_path = ""
     xml_path = ""
     sheet = ""
     data_list = []
     csv_files_dir = None
     titles = []
-    def __init__(self,xml_path="/home/kivy/TFproject/data_extracting/OrganizedData.xlsx", sheet="Sheet1"):
-        self.xml_path = xml_path
+    def __init__(self,base_path, xml_path="OrganizedData.xlsx", sheet="Sheet1"):
+        self.xml_path = os.path.join(base_path,xml_path)
         self.sheet = sheet
+        self.base_path = base_path
 
     def choose_features_by_column_num (self, columns_index_list, start_counting_column):
         workbook = xlrd.open_workbook(self.xml_path, on_demand = True)

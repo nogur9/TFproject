@@ -40,11 +40,11 @@ def main(argv=None):
 
 def run_linear_classifier (titles, dir):
     CSV_COLUMNS = [
-        titles [1:len(titles)]
+        *titles [1:len(titles)]
     ]
 
     # Continuous base columns.
-    group = tf.feature_column.categorical_column_with_vocabulary_list("group",['0','1'])
+    group = tf.feature_column.categorical_column_with_vocabulary_list(titles[0],['0','1'])
     label_column = [group]
     base_columns = []
     for title in titles:
@@ -136,11 +136,12 @@ def input_fn(data_file,CSV_COLUMNS,label_column,csv_files_dir, num_epochs, shuff
         print ("meow\n")
         labels = pd.read_csv(
             tf.gfile.Open(os.path.join(csv_files_dir,"training_labels.csv")),
-            names="group",
+            names=label_column,
             skipinitialspace=True,
             engine="python",
             skiprows=1)
-        labels = labels.dropna(how="any", axis=0)
+        print (labels)
+
 
     else:
           print ("wuf\n")
@@ -150,7 +151,8 @@ def input_fn(data_file,CSV_COLUMNS,label_column,csv_files_dir, num_epochs, shuff
               skipinitialspace=True,
               engine="python",
               skiprows=1)
-          labels = labels.dropna(how="any", axis=0)
+
+    labels = labels.dropna(how="any", axis=0)
     return tf.estimator.inputs.pandas_input_fn(
           x=df_data,
           y=labels,
